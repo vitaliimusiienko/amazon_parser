@@ -1,0 +1,33 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.db.session import engine
+from app.db.base import Base
+
+from app.api.routes_categories import router as categories_router
+from app.api.routes_product import router as product_router
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+app = FastAPI(
+    title="Amazon Best Sellers Parser API",
+    description="API for parsing Amazon Best Sellers data and storing it in a database.",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(categories_router)
+app.include_router(product_router)
