@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "sqlite:///./amazon.sqlite3"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./amazon.sqlite3"
 
     PROXY_URL: str | None = None
 
