@@ -67,7 +67,7 @@ async def parse_product_page(page: Page, url: str, rank: int) -> dict:
         await random_delay(1.5, 3)
     except Exception as e:
         logger.error(f"Error loading page {url}: {e}")
-        return None
+        raise
 
     asin = None
     if "/dp/" in url:
@@ -78,20 +78,24 @@ async def parse_product_page(page: Page, url: str, rank: int) -> dict:
         logger.warning(f"Title not found for ASIN {asin} at URL {url}")
         return None
 
-    price = None
-    price_str = await safe_extract_text(page, "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen") or \
-                await safe_extract_text(page, "#priceblock_ourprice")
-    if price_str:
-        clean_price = re.sub(r'[^\d.]', '', price_str)
-        if clean_price:
-            price = float(clean_price)
+    def parse_price(price_str: str) -> float | None:
+        if not price_str:
+            return None
+        clean = re.sub(r'[^\d.]', '', price_str)
+        try:
+            return float(clean) if clean else None
+        except ValueError:
+            logger.warning(f"Could not parse price: '{price_str}'")
+            return None
 
-    list_price = None
+    price_str = (
+        await safe_extract_text(page, "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen")
+        or await safe_extract_text(page, "#priceblock_ourprice")
+    )
+    price = parse_price(price_str)
+
     list_price_str = await safe_extract_text(page, ".a-text-price .a-offscreen")
-    if list_price_str:
-        clean_list_price = re.sub(r'[^\d.]', '', list_price_str)
-        if clean_list_price:
-            list_price = float(clean_list_price)
+    list_price = parse_price(list_price_str)
 
     discount_percent = None
     if price and list_price and list_price > price:
@@ -111,10 +115,7 @@ async def parse_product_page(page: Page, url: str, rank: int) -> dict:
         if clean_reviews:
             reviews_count = int(clean_reviews)
 
-    is_prime = False
-    prime_logo = await page.query_selector("i.a-icon-prime")
-    if prime_logo:
-        is_prime = True
+    is_prime = await page.query_selector("i.a-icon-prime") is not None
 
     best_sellers_rank = await safe_extract_text(page, "#SalesRank")
     if best_sellers_rank:
@@ -123,8 +124,7 @@ async def parse_product_page(page: Page, url: str, rank: int) -> dict:
     bullet_points = []
     bullet_elements = await page.query_selector_all("#feature-bullets ul li span.a-list-item")
     for elem in bullet_elements:
-        text = await elem.inner_text()
-        text = text.strip()
+        text = (await elem.inner_text()).strip()
         if text and len(bullet_points) < 5:
             bullet_points.append(text)
 
@@ -134,7 +134,7 @@ async def parse_product_page(page: Page, url: str, rank: int) -> dict:
         main_image_url = await img_element.get_attribute("src")
 
     return {
-        "asin": asin or "UNKNOWN",
+        "asin": asin,
         "title": title,
         "rank": rank,
         "price": price,
@@ -145,5 +145,5 @@ async def parse_product_page(page: Page, url: str, rank: int) -> dict:
         "is_prime": is_prime,
         "best_sellers_rank": best_sellers_rank,
         "bullet_points": bullet_points,
-        "main_image_url": main_image_url
+        "main_image_url": main_image_url,
     }
