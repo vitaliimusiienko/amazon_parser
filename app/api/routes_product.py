@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 from app.db.session import get_db
 from app.models.product import Product
+from app.schemas import ProductResponse
 
 from app.services.amazon_parser import parse_category_full
 from app.services.category_service import get_or_create_category
@@ -17,7 +18,7 @@ class ParseRequest(BaseModel):
     category_url: str
 
 
-@router.get("/")
+@router.get("/", response_model=ProductResponse)
 async def get_products(
     min_rating: float = Query(None, description="Minimal price"),
     max_price: float = Query(None, description="Maximal price"),

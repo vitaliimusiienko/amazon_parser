@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
+
 class ProductBase(BaseModel):
     asin: str
     title: str
@@ -15,8 +16,10 @@ class ProductBase(BaseModel):
     bullet_points: Optional[str] = None
     main_image_url: Optional[str] = None
 
+
 class ProductCreate(ProductBase):
     category_id: int
+
 
 class ProductResponse(ProductBase):
     id: int
