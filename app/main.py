@@ -8,17 +8,19 @@ from app.db.base import Base
 from app.api.routes_categories import router as categories_router
 from app.api.routes_product import router as product_router
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
 
+
 app = FastAPI(
     title="Amazon Best Sellers Parser API",
     description="API for parsing Amazon Best Sellers data and storing it in a database.",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 app.add_middleware(
