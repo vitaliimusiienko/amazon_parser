@@ -1,10 +1,35 @@
-from typing import Any
+from typing import Any, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import Product
 from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
+
+async def get_filtered_products(
+    db: AsyncSession,
+    min_rating: float | None = None,
+    max_price: float | None = None,
+    sort_by: str | None = None
+) -> Sequence[Product]:
+
+    query = select(Product)
+
+    if min_rating is not None:
+        query = query.where(Product.rating >= min_rating)
+
+    if max_price is not None:
+        query = query.where(Product.price <= max_price)
+
+    if sort_by == "price":
+        query = query.order_by(Product.price.asc())
+    elif sort_by == "-price":
+        query = query.order_by(Product.price.desc())
+    elif sort_by == "rating":
+        query = query.order_by(Product.rating.desc())
+
+    result = await db.execute(query)
+    return result.scalars().all()
 
 
 async def save_parsed_products(

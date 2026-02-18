@@ -1,15 +1,13 @@
 from fastapi import APIRouter, Query, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.db.session import get_db
-from app.models.product import Product
 from app.schemas import ProductResponse
 
 from app.services.amazon_parser import parse_category_full
 from app.services.category_service import get_or_create_category
-from app.services.product_service import save_parsed_products
+from app.services.product_service import save_parsed_products, get_filtered_products
 
 router = APIRouter()
 
@@ -25,24 +23,7 @@ async def get_products(
     sort_by: str = Query(None, description="Sort by (price, rating, -rating)"),
     db: AsyncSession = Depends(get_db),
 ):
-
-    query = select(Product)
-
-    if min_rating is not None:
-        query = query.where(Product.rating >= min_rating)
-
-    if max_price is not None:
-        query = query.where(Product.price <= max_price)
-
-    if sort_by == "price":
-        query = query.order_by(Product.price.asc())
-    elif sort_by == "-price":
-        query = query.order_by(Product.price.desc())
-    elif sort_by == "rating":
-        query = query.order_by(Product.rating.desc())
-
-    result = await db.execute(query)
-    products = result.scalars().all()
+    products = await get_filtered_products(db, min_rating, max_price, sort_by)
 
     return products
 
