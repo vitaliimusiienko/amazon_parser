@@ -6,18 +6,24 @@ from app.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-async def get_or_create_category(db: AsyncSession, category_url: str) -> Category:
+async def get_or_create_category(db: AsyncSession, category_url: str, category_name: str | None = None) -> Category:
     try:
         result = await db.execute(select(Category).where(Category.url == category_url))
         category = result.scalars().first()
 
         if category:
             logger.info(f"Category found in db: {category_url}")
+            if category_name and category.name != category_name:
+                category.name = category_name
+                await db.commit()
+                await db.refresh(category)
+                logger.info(f"Category name updated to: {category_name}")
             return category
 
-        logger.info(f"Creating new category: {category_url}")
-
-        category_name = category_url.strip("/").split("/")[-1].replace("-", " ").title()
+        final_name = category_name
+        if not final_name:
+            final_name = category_url.strip("/").split("/")[-1].replace("-", " ").title()
+            
         new_category = Category(name=category_name, url=category_url)
         db.add(new_category)
         await db.commit()
