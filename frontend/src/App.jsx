@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './index.css';
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://amazon-parser-4tja.onrender.com";
 
 function App() {
   const [products, setProducts] = useState([]);
