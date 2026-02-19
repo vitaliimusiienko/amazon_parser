@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Растягиваем контейнеры на всю высоту и ширину */
+html, 
+body, 
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  /* Устанавливаем базовый фон, чтобы не было белых полос при скролле */
+  background-color: #f9fafb; 
+}
+
+/* Убираем стандартные стили Vite, которые всё ломают */
+body {
+  display: block; /* Вместо flex */
+  min-width: 100%;
+  min-height: 100%;
+}
