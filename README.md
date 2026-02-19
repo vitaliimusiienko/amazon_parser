@@ -30,8 +30,8 @@ A robust full-stack application designed for automated monitoring of Amazon Best
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/your-username/amazon-bestsellers-tracker.git](https://github.com/your-username/amazon-bestsellers-tracker.git)
-cd amazon-bestsellers-tracker
+git clone [https://github.com/vitaliimusiienko/amazon_parser.git](https://github.com/vitaliimusiienko/amazon_parser.git)
+cd amazon_parser
 ```
 ### 2. Backend Setup
 Navigate to the backend directory, create a virtual environment, and install dependencies:
