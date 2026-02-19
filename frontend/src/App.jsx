@@ -10,11 +10,16 @@ function App() {
   const [url, setUrl] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [categories, setCategories] = useState([]);
+  const [parsedUrls, setParsedUrls] = useState([]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (currentUrl = url) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/?sort_by=${sortBy}`, {
+      const params = new URLSearchParams();
+      if (sortBy) params.append('sort_by', sortBy);
+      if (currentUrl) params.append('category_url', currentUrl);
+
+      const res = await fetch(`${API_BASE}/?${params.toString()}`, {
         headers: {
           'Bypass-Tunnel-Reminder': 'true',
           'ngrok-skip-browser-warning': 'true'
@@ -46,10 +51,16 @@ function App() {
     }
   };
 
-  const startParsing = async (targetUrl) => {
+const startParsing = async (targetUrl) => {
     const parseUrl = typeof targetUrl === 'string' ? targetUrl : url;
     if (!parseUrl) return alert("Please select a category or paste an Amazon URL!");
-    
+
+    if (parsedUrls.includes(parseUrl)) {
+      console.log("Категория уже спарсена в этой сессии. Берем из базы.");
+      fetchProducts(parseUrl);
+      return; 
+    }
+
     setParsing(true);
     try {
       const res = await fetch(`${API_BASE}/parse`, {
@@ -63,7 +74,10 @@ function App() {
       });
       const data = await res.json();
       console.log("Parsing result:", data.detail);
-      fetchProducts();
+      setParsedUrls(prev => [...prev, parseUrl]);
+
+      fetchProducts(parseUrl); 
+      
     } catch (e) {
       alert("Error starting parser");
     } finally {
@@ -71,10 +85,13 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
+useEffect(() => {
     fetchCategories();
-  }, [sortBy]);
+  }, []);
+
+useEffect(() => {
+    fetchProducts();
+  }, [sortBy, url]);
 
   const getCurrencySymbol = (currency) => {
     const symbols = { 'USD': '$', 'EUR': '€', 'GBP': '£', 'UAH': '₴' };
