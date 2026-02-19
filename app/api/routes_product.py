@@ -16,7 +16,7 @@ class ParseRequest(BaseModel):
     category_url: str
 
 
-@router.get("/", response_model=ProductResponse)
+@router.get("/", response_model=list[ProductResponse])
 async def get_products(
     min_rating: float = Query(None, description="Minimal price"),
     max_price: float = Query(None, description="Maximal price"),
