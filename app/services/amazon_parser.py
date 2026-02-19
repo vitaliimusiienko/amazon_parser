@@ -350,3 +350,62 @@ async def parse_category_full(category_url: str) -> list[dict]:
 
     logger.info(f"Successfully parsed {len(parsed_products)} products")
     return parsed_products
+
+
+async def parse_categories_page(page: Page, url: str) -> list[dict] | None:
+    """
+    Parse category links from an Amazon Best Sellers page or subcategory page.
+    Returns a list of dicts with category data or None if parsing fails.
+    """
+    logger.info(f"Parsing categories from page: {url}")
+
+    try:
+        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+
+        await random_delay(1.5, 3)
+        await bypass_soft_block(page)
+    except Exception as e:
+        logger.error(f"Error loading category page {url}: {e}")
+        return None
+
+    sidebar_selector = '#zg_left_col1, #zg_left_col2, #zg-left-col'
+    sidebar_locator = page.locator(sidebar_selector).first
+    
+    if await sidebar_locator.count() == 0:
+        logger.warning(f"Sidebar not found on {url}. Possible CAPTCHA or layout change.")
+        return None
+
+    categories_data = []
+
+    links_data = await sidebar_locator.locator("a").evaluate_all("""
+        (elements) => elements.map(el => ({
+            name: el.innerText.trim(),
+            href: el.getAttribute('href')
+        }))
+    """)
+
+    for item in links_data:
+        href = item.get("href")
+        name = item.get("name")
+
+        if not href or not name:
+            continue
+
+        clean_name = name.split('\n')[0].strip()
+
+        if clean_name.lower() in ["any department", "best sellers"]:
+            continue
+
+        if "/zgbs/" in href and "/dp/" not in href:
+            clean_url = href.split("/ref=")[0]
+            full_url = clean_url if clean_url.startswith("http") else f"https://www.amazon.com/{clean_url}"
+
+            categories_data.append({
+                "name": clean_name,
+                "url": full_url
+            })
+
+    unique_categories = list({v['url']: v for v in categories_data}.values())
+    
+    logger.info(f"Successfully extracted {len(unique_categories)} categories from {url}")
+    return unique_categories
