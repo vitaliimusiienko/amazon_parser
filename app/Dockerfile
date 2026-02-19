@@ -28,4 +28,4 @@ RUN playwright install chromium
 
 COPY . .
 
-CMD cd app/  python run.py
+CMD  cd .. python run.py
