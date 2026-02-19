@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 
@@ -13,7 +13,7 @@ class ProductBase(BaseModel):
     review_count: Optional[int] = None
     is_prime: Optional[bool] = None
     best_seller_rank: Optional[int] = None
-    bullet_points: Optional[str] = None
+    bullet_points: Optional[list[str]] = Field(default_factory=list)
     main_image_url: Optional[str] = None
 
 
@@ -24,5 +24,6 @@ class ProductCreate(ProductBase):
 class ProductResponse(ProductBase):
     id: int
     category_id: int
+    currency: str
 
     model_config = ConfigDict(from_attributes=True)
