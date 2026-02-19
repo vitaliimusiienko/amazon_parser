@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from app.db.session import engine, get_db
+from app.db.session import engine
 from app.db.base import Base
 
 from app.api.routes_categories import router as categories_router
@@ -16,14 +16,15 @@ scheduler = AsyncIOScheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
-        scheduler.add_job(
+        await conn.run_sync(Base.metadata.create_all)
+    
+    scheduler.add_job(
         sync_amazon_categories, 
-        CronTrigger(hour=3, minute=0), 
+        CronTrigger(hour=13, minute=20), 
         id="sync_categories_daily",
         replace_existing=True
     )
-        await conn.run_sync(Base.metadata.create_all)
-        scheduler.start()
+    scheduler.start()
     yield
 
     scheduler.shutdown()
