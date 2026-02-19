@@ -16,10 +16,5 @@ async def get_categories(db: AsyncSession = Depends(get_db)):
 
 @router.post("/api/admin/force-sync-categories")
 async def force_sync_categories(background_tasks: BackgroundTasks):
-    """
-    Ручной запуск парсера категорий. 
-    Ждать 3 часа ночи для тестирования — это непрофессионально.
-    Отправляем задачу в фон, чтобы не блокировать HTTP-ответ.
-    """
     background_tasks.add_task(sync_amazon_categories)
-    return {"message": "Синхронизация категорий запущена в фоновом режиме."}
+    return {"message": "Syncing category"}
