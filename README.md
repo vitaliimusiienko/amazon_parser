@@ -75,6 +75,7 @@ API Documentation: Explore the interactive Swagger UI at
 http://localhost:8000/docs
 ```
 📂 Project Structure
+```plaintext
 ├── backend
 │   ├── app
 │   │   ├── api          # FastAPI route handlers
@@ -87,6 +88,7 @@ http://localhost:8000/docs
 │   │   ├── components   # UI Components (ProductCards, Navbar)
 │   │   └── App.jsx      # Main application logic & State management
 └── README.md
+```
 🔧 Development Insights
 Service Layer Pattern: Database operations are decoupled from API routes into a dedicated Service layer, ensuring the code is maintainable and testable.
 
