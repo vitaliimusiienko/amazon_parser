@@ -12,7 +12,7 @@ async def get_or_create_category(db: AsyncSession, category_url: str) -> Categor
         category = result.scalars().first()
 
         if category:
-            logger.info(f"Category find in db: {category_url}")
+            logger.info(f"Category found in db: {category_url}")
             return category
 
         logger.info(f"Creating new category: {category_url}")
