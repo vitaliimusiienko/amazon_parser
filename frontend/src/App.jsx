@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './index.css';
 
-const API_BASE = "https://plenty-tools-strive.loca.lt"
+const API_BASE = "http://localhost:8000";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -9,11 +9,17 @@ function App() {
   const [parsing, setParsing] = useState(false);
   const [url, setUrl] = useState("");
   const [sortBy, setSortBy] = useState("");
+  const [categories, setCategories] = useState([]);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/?sort_by=${sortBy}`);
+      const res = await fetch(`${API_BASE}/?sort_by=${sortBy}`, {
+        headers: {
+          'Bypass-Tunnel-Reminder': 'true',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
       const data = await res.json();
       setProducts(data);
     } catch (error) {
@@ -23,17 +29,40 @@ function App() {
     }
   };
 
-  const startParsing = async () => {
-    if (!url) return alert("Please paste an Amazon URL!");
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/categories/`, {
+        headers: {
+          'Bypass-Tunnel-Reminder': 'true',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  };
+
+  const startParsing = async (targetUrl) => {
+    const parseUrl = typeof targetUrl === 'string' ? targetUrl : url;
+    if (!parseUrl) return alert("Please select a category or paste an Amazon URL!");
+    
     setParsing(true);
     try {
       const res = await fetch(`${API_BASE}/parse`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category_url: url })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Bypass-Tunnel-Reminder': 'true',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ category_url: parseUrl })
       });
       const data = await res.json();
-      alert(data.detail);
+      console.log("Parsing result:", data.detail);
       fetchProducts();
     } catch (e) {
       alert("Error starting parser");
@@ -44,9 +73,9 @@ function App() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, [sortBy]);
 
-  // Хелпер для красивого отображения символа валюты
   const getCurrencySymbol = (currency) => {
     const symbols = { 'USD': '$', 'EUR': '€', 'GBP': '£', 'UAH': '₴' };
     return symbols[currency] || currency || '$';
@@ -54,8 +83,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#EAEDED] text-[#0F1111] font-sans selection:bg-[#febd69]/30">
-      
-      {/* Amazon Dark Nav Bar */}
+
       <nav className="bg-[#131921] px-4 py-3 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
           <div className="flex items-center gap-1 cursor-pointer">
@@ -63,18 +91,37 @@ function App() {
             <span className="text-[#febd69] text-sm font-bold pt-2">.parser</span>
           </div>
 
-          <div className="flex-1 flex w-full shadow-sm">
+          <div className="flex-1 flex w-full shadow-sm bg-white rounded-md">
+            
+            <select 
+              className="bg-gray-100 text-sm border-r border-gray-300 rounded-l-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#febd69] cursor-pointer max-w-[140px] md:max-w-[220px] text-gray-700 truncate"
+              onChange={(e) => {
+                const selectedUrl = e.target.value;
+                setUrl(selectedUrl);
+                if (selectedUrl) {
+                  startParsing(selectedUrl);
+                }
+              }}
+              value={url}
+            >
+              <option value="">Categories...</option>
+              {categories && categories.map((cat) => (
+                <option key={cat.id} value={cat.url}>{cat.name}</option>
+              ))}
+            </select>
+
             <input 
               type="text" 
-              placeholder="Paste Amazon category URL here..." 
-              className="w-full p-2.5 rounded-l-md outline-none focus:ring-2 focus:ring-[#febd69] transition-all"
+              placeholder="...or paste custom Amazon URL" 
+              className="flex-1 p-2.5 outline-none focus:ring-2 focus:ring-[#febd69] transition-all text-sm min-w-0"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
+            
             <button 
-              onClick={startParsing}
+              onClick={() => startParsing(url)}
               disabled={parsing}
-              className="bg-[#febd69] hover:bg-[#f3a847] transition-colors px-6 rounded-r-md flex items-center justify-center"
+              className="bg-[#febd69] hover:bg-[#f3a847] transition-colors px-6 rounded-r-md flex items-center justify-center border-none shrink-0"
             >
               {parsing ? (
                 <div className="w-5 h-5 border-2 border-[#131921] border-t-transparent rounded-full animate-spin"></div>
@@ -104,13 +151,13 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-xl font-bold mb-6 pb-2 border-b border-gray-300">
-          Best Sellers in Category <span className="text-gray-500 font-normal text-sm ml-2">({products.length} items found)</span>
+          Best Sellers <span className="text-gray-500 font-normal text-sm ml-2">({products.length} items found)</span>
         </h2>
 
-        {loading ? (
+        {loading || parsing ? (
           <div className="flex flex-col items-center justify-center py-24 text-gray-500">
             <div className="w-10 h-10 border-4 border-[#febd69] border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="font-medium">Syncing with Amazon database...</p>
+            <p className="font-medium">{parsing ? "Parsing Amazon..." : "Syncing with Amazon database..."}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -132,7 +179,7 @@ function App() {
                   <div className="flex items-center gap-1 mb-1">
                     <span className="text-[#DE7921] font-bold text-sm">{p.rating || '0.0'}</span>
                     <div className="flex text-[#FFA41C] text-xs">
-                        {"★".repeat(Math.floor(p.rating || 0))}${"☆".repeat(5 - Math.floor(p.rating || 0))}$
+                        {"★".repeat(Math.floor(p.rating || 0))}{"☆".repeat(5 - Math.floor(p.rating || 0))}
                     </div>
                     <span className="text-[#007185] text-xs ml-1">{p.reviews_count}</span>
                   </div>
@@ -143,7 +190,6 @@ function App() {
                     </div>
                   )}
 
-                  {/* Финальный блок цены с валютой */}
                   <div className="mt-auto pt-2">
                     <div className="flex items-start text-[#0F1111]">
                       <span className="text-xs font-medium pt-1 mr-0.5">
